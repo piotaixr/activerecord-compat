@@ -37,7 +37,7 @@ module ActiveRecord
 
         # Quotes column names for use in SQL queries.
         def quote_column_name(name) #:nodoc:
-          PGconn.quote_ident(name.to_s)
+          PG::Connection.quote_ident(name.to_s)
         end
 
         # Quote date/time values for use in SQL input. Includes microseconds

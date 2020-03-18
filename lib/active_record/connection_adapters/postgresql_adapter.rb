@@ -12,8 +12,8 @@ require 'active_record/connection_adapters/postgresql/database_statements'
 
 require 'arel/visitors/bind_visitor'
 
-# Make sure we're using pg high enough for PGResult#values
-gem 'pg', '~> 0.15'
+# Make sure we're using pg high enough for PG::Result#values
+gem 'pg', '> 0.15'
 require 'pg'
 
 require 'ipaddr'
@@ -36,10 +36,10 @@ module ActiveRecord
       conn_params[:user] = conn_params.delete(:username) if conn_params[:username]
       conn_params[:dbname] = conn_params.delete(:database) if conn_params[:database]
 
-      # Forward only valid config params to PGconn.connect.
+      # Forward only valid config params to PG::Connection.connect.
       conn_params.keep_if { |k, _| VALID_CONN_PARAMS.include?(k) }
 
-      # The postgres drivers don't allow the creation of an unconnected PGconn object,
+      # The postgres drivers don't allow the creation of an unconnected PG::Connection object,
       # so just pass a nil connection object for the time being.
       ConnectionAdapters::PostgreSQLAdapter.new(nil, logger, conn_params, config)
     end
@@ -216,8 +216,8 @@ module ActiveRecord
           end
 
           def connection_active?
-            @connection.status == PGconn::CONNECTION_OK
-          rescue PGError
+            @connection.status == PG::Connection::CONNECTION_OK
+          rescue PG::Error
             false
           end
       end
@@ -266,7 +266,7 @@ module ActiveRecord
       def active?
         @connection.query 'SELECT 1'
         true
-      rescue PGError
+      rescue PG::Error
         false
       end
 
@@ -414,7 +414,7 @@ module ActiveRecord
         def translate_exception(exception, message)
           return exception unless exception.respond_to?(:result)
 
-          case exception.result.try(:error_field, PGresult::PG_DIAG_SQLSTATE)
+          case exception.result.try(:error_field, PG::Result::PG_DIAG_SQLSTATE)
           when UNIQUE_VIOLATION
             RecordNotUnique.new(message, exception)
           when FOREIGN_KEY_VIOLATION
@@ -609,7 +609,7 @@ module ActiveRecord
           # FEATURE_NOT_SUPPORTED.  Check here for more details:
           # http://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/backend/utils/cache/plancache.c#l573
           begin
-            code = pgerror.result.result_error_field(PGresult::PG_DIAG_SQLSTATE)
+            code = pgerror.result.result_error_field(PG::Result::PG_DIAG_SQLSTATE)
           rescue
             raise e
           end
@@ -648,7 +648,7 @@ module ActiveRecord
         # Connects to a PostgreSQL server and sets up the adapter depending on the
         # connected server's characteristics.
         def connect
-          @connection = PGconn.connect(@connection_parameters)
+          @connection = PG::Connection.connect(@connection_parameters)
 
           # Money type has a fixed precision of 10 in PostgreSQL 8.2 and below, and as of
           # PostgreSQL 8.3 it has a fixed precision of 19. PostgreSQLColumn.extract_precision
